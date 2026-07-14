@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In | PhysiqueIQ{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 75vh;">
+    <div class="col-md-5 fade-in-up">
+        <div class="glass-card p-5">
+            <div class="text-center mb-4">
+                <i class="bi bi-shield-lock-fill text-gradient-primary fs-1"></i>
+                <h2 class="fw-bold mt-2 text-white">Welcome Back</h2>
+                <p class="text-secondary">Sign in to access your custom plans and coach metrics</p>
+            </div>
+            
+            {% if request.query_params.get('error') %}
+            <div class="alert alert-danger border-0 bg-danger bg-opacity-10 text-danger text-center py-2 mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ request.query_params.get('error') }}
+            </div>
+            {% endif %}
+            
+            <form action="/api/v1/auth/login-form" method="POST">
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email Address</label>
+                    <input type="email" class="form-control" id="email" name="email" required placeholder="name@example.com">
+                </div>
+                
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label for="password" class="form-label mb-0">Password</label>
+                        <a href="#" class="text-gradient-accent text-decoration-none small">Forgot password?</a>
+                    </div>
+                    <input type="password" class="form-control" id="password" name="password" required placeholder="••••••••">
+                </div>
+                
+                <button type="submit" class="btn btn-premium w-100 py-3 mb-3">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                </button>
+                
+                <div class="text-center">
+                    <span class="text-secondary small">Don't have an account? </span>
+                    <a href="/register" class="text-gradient-primary text-decoration-none fw-bold small">Create one now</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

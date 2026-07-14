@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account | PhysiqueIQ{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="col-md-7 fade-in-up">
+        <div class="glass-card p-5">
+            <div class="text-center mb-4">
+                <i class="bi bi-person-plus-fill text-gradient-accent fs-1"></i>
+                <h2 class="fw-bold mt-2 text-white">Create Your Profile</h2>
+                <p class="text-secondary">Join PhysiqueIQ and unleash AI-powered insights for your fitness journey</p>
+            </div>
+            
+            <div id="alertContainer"></div>
+            
+            <form id="registerForm">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="fullName" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="fullName" required placeholder="John Doe">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" required placeholder="john@example.com">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="password" class="form-label">Password (Min. 6 chars)</label>
+                        <input type="password" class="form-control" id="password" required minlength="6" placeholder="••••••••">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="role" class="form-label">Select Account Role</label>
+                        <select class="form-select" id="role">
+                            <option value="member">Gym Member (Client)</option>
+                            <option value="trainer">Personal Trainer / Coach</option>
+                            <option value="admin">System Administrator</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <hr class="my-4 border-secondary opacity-25">
+                
+                <h5 class="text-gradient-primary fw-bold mb-3"><i class="bi bi-info-circle me-2"></i>Initial Fitness Profile (Optional)</h5>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="age" class="form-label">Age</label>
+                        <input type="number" class="form-control" id="age" min="10" max="100" placeholder="25">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="gender" class="form-label">Gender</label>
+                        <select class="form-select" id="gender">
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="height" class="form-label">Height (cm)</label>
+                        <input type="number" class="form-control" id="height" min="50" max="250" placeholder="175">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="weight" class="form-label">Current Weight (kg)</label>
+                        <input type="number" step="0.1" class="form-control" id="weight" min="20" max="300" placeholder="75.5">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="targetWeight" class="form-label">Target Weight (kg)</label>
+                        <input type="number" step="0.1" class="form-control" id="targetWeight" min="20" max="300" placeholder="80.0">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-premium-accent w-100 py-3 mt-3">
+                    <i class="bi bi-check-circle-fill me-2"></i>Register Profile
+                </button>
+                
+                <div class="text-center mt-3">
+                    <span class="text-secondary small">Already have an account? </span>
+                    <a href="/login" class="text-gradient-accent text-decoration-none fw-bold small">Sign in here</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('registerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const alertContainer = document.getElementById('alertContainer');
+    alertContainer.innerHTML = ''; // Clear existing alerts
+    
+    const fullName = document.getElementById('fullName').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const role = document.getElementById('role').value;
+    
+    const data = {
+        email: email,
+        full_name: fullName,
+        role: role,
+        password: password
+    };
+    
+    try {
+        const response = await fetch('/api/v1/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Success alert
+            alertContainer.innerHTML = `
+                <div class="alert alert-success border-0 bg-success bg-opacity-10 text-success text-center py-3 mb-4" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>Account created successfully! Redirecting to login...
+                </div>
+            `;
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 2000);
+        } else {
+            // Error alert
+            const detailMsg = result.detail || 'An error occurred during registration.';
+            alertContainer.innerHTML = `
+                <div class="alert alert-danger border-0 bg-danger bg-opacity-10 text-danger text-center py-2 mb-4" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>${detailMsg}
+                </div>
+            `;
+        }
+    } catch (err) {
+        alertContainer.innerHTML = `
+            <div class="alert alert-danger border-0 bg-danger bg-opacity-10 text-danger text-center py-2 mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>Network error. Please try again.
+            </div>
+        `;
+    }
+});
+</script>
+{% endblock %}

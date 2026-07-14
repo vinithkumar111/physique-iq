@@ -1,0 +1,760 @@
+{% extends "base.html" %}
+
+{% block title %}Member Dashboard | PhysiqueIQ{% endblock %}
+
+{% block layout %}
+<div class="d-flex">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="px-4 py-2 mb-3">
+            <span class="text-muted text-uppercase small font-monospace">My Logs</span>
+        </div>
+        <a href="#" class="sidebar-link active" data-tab="overview" onclick="switchTab('overview',this)">
+            <i class="bi bi-grid"></i>Overview
+        </a>
+        <a href="#" class="sidebar-link" data-tab="profile" onclick="switchTab('profile',this)">
+            <i class="bi bi-person-circle"></i>My Profile
+        </a>
+        <a href="#" class="sidebar-link" data-tab="workout" onclick="switchTab('workout',this)">
+            <i class="bi bi-calendar2-heart"></i>Log Workout
+        </a>
+        <a href="#" class="sidebar-link" data-tab="nutrition" onclick="switchTab('nutrition',this)">
+            <i class="bi bi-egg-fried"></i>Nutrition Log
+        </a>
+        <a href="#" class="sidebar-link" data-tab="measurements" onclick="switchTab('measurements',this)">
+            <i class="bi bi-rulers"></i>Measurements
+        </a>
+        <hr class="mx-3 my-4 border-secondary opacity-25">
+        <div class="px-4 py-2">
+            <span class="text-muted text-uppercase small font-monospace">AI Assistant</span>
+        </div>
+        <a href="#" class="sidebar-link" data-tab="ai-coach" onclick="switchTab('ai-coach',this)">
+            <i class="bi bi-robot"></i>AI Fitness Coach
+        </a>
+    </div>
+
+    <!-- Dashboard Main Content -->
+    <div class="dashboard-content w-100">
+
+        <!-- ── OVERVIEW TAB ──────────────────────────────────────────── -->
+        <div id="tab-overview" class="tab-panel fade-in-up">
+            <div class="d-flex justify-content-between align-items-center mb-5">
+                <div>
+                    <h1 class="fw-bold text-white mb-1">My Dashboard</h1>
+                    <p class="text-secondary mb-0">Welcome back, <strong class="text-white">{{ current_user.full_name }}</strong> — track your progress below</p>
+                </div>
+                <span class="badge bg-secondary bg-opacity-25 text-gradient-accent p-2 px-3 border border-info border-opacity-25">
+                    <i class="bi bi-lightning-charge me-1"></i>Member Account
+                </span>
+            </div>
+
+            <!-- Metric Cards -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-3">
+                    <div class="glass-card p-4 stat-card">
+                        <span class="text-secondary small font-monospace text-uppercase">Height</span>
+                        <h2 class="fw-bold text-white mt-2 mb-0">
+                            {% if profile and profile.height %}{{ profile.height }} cm{% else %}<span class="text-muted fs-5">—</span>{% endif %}
+                        </h2>
+                        <span class="text-secondary small">Body measurement</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-4 stat-card" style="--primary-grad: var(--accent-grad)">
+                        <span class="text-secondary small font-monospace text-uppercase">Current Weight</span>
+                        <h2 class="fw-bold text-white mt-2 mb-0">
+                            {% if profile and profile.weight %}{{ profile.weight }} kg{% else %}<span class="text-muted fs-5">—</span>{% endif %}
+                        </h2>
+                        <span class="text-secondary small">
+                            {% if profile and profile.target_weight %}Goal: {{ profile.target_weight }} kg{% else %}Update your profile{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-4 stat-card" style="--primary-grad: linear-gradient(135deg, #10b981 0%, #059669 100%)">
+                        <span class="text-secondary small font-monospace text-uppercase">Fitness Goal</span>
+                        <h2 class="fw-bold text-white mt-2 mb-0 fs-4">
+                            {% if profile %}{{ profile.fitness_goal.replace('_', ' ').title() }}{% else %}Not set{% endif %}
+                        </h2>
+                        <span class="text-success small">
+                            {% if profile %}{{ profile.experience_level.replace('_', ' ').title() }}{% else %}—{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-4 stat-card" style="--primary-grad: linear-gradient(135deg, #fbbf24 0%, #d97706 100%)">
+                        <span class="text-secondary small font-monospace text-uppercase">Diet Preference</span>
+                        <h2 class="fw-bold text-white mt-2 mb-0 fs-4">
+                            {% if profile %}{{ profile.dietary_preference.replace('_', ' ').title() }}{% else %}Not set{% endif %}
+                        </h2>
+                        <span class="text-secondary small">
+                            {% if profile %}{{ profile.daily_activity_level.replace('_', ' ').title() }}{% else %}—{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="glass-card p-4">
+                        <h4 class="fw-bold text-white mb-4"><i class="bi bi-activity me-2 text-gradient-primary"></i>Recent Workout Logs</h4>
+                        <div id="overview-workouts">
+                            <div class="text-center py-4 text-secondary">
+                                <i class="bi bi-hourglass-split fs-2 mb-2 d-block opacity-50"></i>
+                                Loading recent workouts…
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="glass-card p-4">
+                        <h4 class="fw-bold text-white mb-4"><i class="bi bi-robot me-2 text-gradient-accent"></i>AI Tip</h4>
+                        <p class="text-secondary small">
+                            {% if profile and profile.fitness_goal == 'fat_loss' %}
+                            Based on your fat loss goal, aim for a 300–500 kcal daily deficit. Combine cardio with resistance training and prioritise protein to preserve muscle mass.
+                            {% elif profile and profile.fitness_goal == 'muscle_gain' %}
+                            For muscle gain, eat in a 200–400 kcal surplus with 1.6–2.2g of protein per kg of bodyweight. Prioritise progressive overload in your compound lifts.
+                            {% elif profile and profile.fitness_goal == 'strength' %}
+                            For strength, focus on the big 4 lifts (squat, deadlift, bench, press). Train 3–5 days per week and ensure adequate recovery between heavy sessions.
+                            {% else %}
+                            Consistency is key. Log your workouts, stay hydrated, and get 7–9 hours of sleep every night to maximise recovery.
+                            {% endif %}
+                        </p>
+                        <button class="btn btn-premium btn-sm w-100 mt-2" onclick="switchTab('ai-coach', document.querySelector('[data-tab=ai-coach]'))">
+                            <i class="bi bi-chat-dots me-2"></i>Open AI Coach
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── PROFILE TAB ────────────────────────────────────────────── -->
+        <div id="tab-profile" class="tab-panel d-none fade-in-up">
+            <div class="mb-5">
+                <h1 class="fw-bold text-white mb-1">My Profile</h1>
+                <p class="text-secondary mb-0">View and update your personal fitness details</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="glass-card p-4 text-center">
+                        <div class="avatar-circle mx-auto mb-3">
+                            <i class="bi bi-person-fill fs-1 text-gradient-primary"></i>
+                        </div>
+                        <h5 class="text-white fw-bold mb-1">{{ current_user.full_name }}</h5>
+                        <p class="text-secondary small mb-2">{{ current_user.email }}</p>
+                        <span class="badge badge-custom badge-member">Member</span>
+                        <hr class="border-secondary opacity-25 my-3">
+                        <div class="text-start">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-secondary small">Member since</span>
+                                <span class="text-white small">{{ current_user.created_at.strftime('%b %Y') }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-secondary small">Status</span>
+                                <span class="text-success small"><i class="bi bi-circle-fill me-1" style="font-size:0.5rem"></i>Active</span>
+                            </div>
+                            {% if profile %}
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-secondary small">Equipment</span>
+                                <span class="text-white small">{{ profile.equipment_access.replace('_',' ').title() }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="glass-card p-4">
+                        <h4 class="fw-bold text-white mb-4"><i class="bi bi-pencil-square me-2"></i>Edit Profile</h4>
+                        <div id="profile-alert"></div>
+                        <form id="profile-form">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Age</label>
+                                    <input type="number" class="form-control" name="age" min="10" max="100"
+                                        value="{{ profile.age if profile and profile.age else '' }}" placeholder="e.g. 25">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Gender</label>
+                                    <select class="form-select" name="gender">
+                                        <option value="">Select…</option>
+                                        <option value="male"   {% if profile and profile.gender=='male' %}selected{% endif %}>Male</option>
+                                        <option value="female" {% if profile and profile.gender=='female' %}selected{% endif %}>Female</option>
+                                        <option value="other"  {% if profile and profile.gender=='other' %}selected{% endif %}>Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Height (cm)</label>
+                                    <input type="number" step="0.1" class="form-control" name="height" min="100" max="250"
+                                        value="{{ profile.height if profile and profile.height else '' }}" placeholder="e.g. 175">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Current Weight (kg)</label>
+                                    <input type="number" step="0.1" class="form-control" name="weight" min="30" max="300"
+                                        value="{{ profile.weight if profile and profile.weight else '' }}" placeholder="e.g. 75">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Target Weight (kg)</label>
+                                    <input type="number" step="0.1" class="form-control" name="target_weight" min="30" max="300"
+                                        value="{{ profile.target_weight if profile and profile.target_weight else '' }}" placeholder="e.g. 70">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Fitness Goal</label>
+                                    <select class="form-select" name="fitness_goal">
+                                        <option value="fat_loss"    {% if profile and profile.fitness_goal=='fat_loss' %}selected{% endif %}>Fat Loss</option>
+                                        <option value="muscle_gain" {% if profile and profile.fitness_goal=='muscle_gain' %}selected{% endif %}>Muscle Gain</option>
+                                        <option value="maintenance" {% if profile and profile.fitness_goal=='maintenance' %}selected{% endif %}>Maintenance</option>
+                                        <option value="strength"    {% if profile and profile.fitness_goal=='strength' %}selected{% endif %}>Strength</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Experience Level</label>
+                                    <select class="form-select" name="experience_level">
+                                        <option value="beginner"     {% if profile and profile.experience_level=='beginner' %}selected{% endif %}>Beginner</option>
+                                        <option value="intermediate" {% if profile and profile.experience_level=='intermediate' %}selected{% endif %}>Intermediate</option>
+                                        <option value="advanced"     {% if profile and profile.experience_level=='advanced' %}selected{% endif %}>Advanced</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Equipment Access</label>
+                                    <select class="form-select" name="equipment_access">
+                                        <option value="gym"       {% if profile and profile.equipment_access=='gym' %}selected{% endif %}>Gym</option>
+                                        <option value="home"      {% if profile and profile.equipment_access=='home' %}selected{% endif %}>Home</option>
+                                        <option value="dumbbells" {% if profile and profile.equipment_access=='dumbbells' %}selected{% endif %}>Dumbbells Only</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Dietary Preference</label>
+                                    <select class="form-select" name="dietary_preference">
+                                        <option value="veg"         {% if profile and profile.dietary_preference=='veg' %}selected{% endif %}>Vegetarian</option>
+                                        <option value="non_veg"     {% if profile and profile.dietary_preference=='non_veg' %}selected{% endif %}>Non-Vegetarian</option>
+                                        <option value="eggitarian"  {% if profile and profile.dietary_preference=='eggitarian' %}selected{% endif %}>Eggitarian</option>
+                                        <option value="vegan"       {% if profile and profile.dietary_preference=='vegan' %}selected{% endif %}>Vegan</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Daily Activity Level</label>
+                                    <select class="form-select" name="daily_activity_level">
+                                        <option value="sedentary"         {% if profile and profile.daily_activity_level=='sedentary' %}selected{% endif %}>Sedentary (desk job, little exercise)</option>
+                                        <option value="lightly_active"    {% if profile and profile.daily_activity_level=='lightly_active' %}selected{% endif %}>Lightly Active (1–3 days/week)</option>
+                                        <option value="moderately_active" {% if profile and profile.daily_activity_level=='moderately_active' %}selected{% endif %}>Moderately Active (3–5 days/week)</option>
+                                        <option value="very_active"       {% if profile and profile.daily_activity_level=='very_active' %}selected{% endif %}>Very Active (6–7 days/week)</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Medical Conditions <span class="text-muted">(optional)</span></label>
+                                    <textarea class="form-control" name="medical_conditions" rows="2" placeholder="e.g. lower back pain, knee injury…">{{ profile.medical_conditions if profile and profile.medical_conditions else '' }}</textarea>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-premium px-4" id="save-profile-btn">
+                                    <i class="bi bi-check2-circle me-2"></i>Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── WORKOUT LOG TAB ───────────────────────────────────────── -->
+        <div id="tab-workout" class="tab-panel d-none fade-in-up">
+            <div class="mb-5">
+                <h1 class="fw-bold text-white mb-1">Log Workout</h1>
+                <p class="text-secondary mb-0">Record your training sessions and track exercises over time</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="glass-card p-4">
+                        <h4 class="fw-bold text-white mb-4"><i class="bi bi-plus-circle me-2"></i>New Entry</h4>
+                        <div id="workout-alert"></div>
+                        <form id="workout-form">
+                            <div class="mb-3">
+                                <label class="form-label">Date</label>
+                                <input type="date" class="form-control" name="date" id="workout-date">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Exercise Name</label>
+                                <input type="text" class="form-control" name="exercise" placeholder="e.g. Bench Press, Squat, Pull-up" required>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-4">
+                                    <label class="form-label">Sets</label>
+                                    <input type="number" class="form-control" name="sets" min="1" max="20" value="3" required>
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label">Reps</label>
+                                    <input type="number" class="form-control" name="reps" min="1" max="100" value="10" required>
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label">Weight (kg)</label>
+                                    <input type="number" step="0.5" class="form-control" name="weight_kg" min="0" placeholder="0">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Notes <span class="text-muted">(optional)</span></label>
+                                <textarea class="form-control" name="notes" rows="2" placeholder="How did it feel?"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-premium w-100">
+                                <i class="bi bi-check2-circle me-2"></i>Log Workout
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="glass-card p-4">
+                        <h4 class="fw-bold text-white mb-4"><i class="bi bi-list-check me-2"></i>Recent Workouts</h4>
+                        <div id="workout-log-list">
+                            <div class="text-center py-4 text-secondary">
+                                <i class="bi bi-hourglass-split fs-2 mb-2 d-block opacity-50"></i>
+                                Loading…
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── NUTRITION TAB ─────────────────────────────────────────── -->
+        <div id="tab-nutrition" class="tab-panel d-none fade-in-up">
+            <div class="mb-5">
+                <h1 class="fw-bold text-white mb-1">Nutrition Log</h1>
+                <p class="text-secondary mb-0">Track your daily caloric and macronutrient intake</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="glass-card p-4">
+                        <h4 class="fw-bold text-white mb-4"><i class="bi bi-plus-circle me-2"></i>Log a Meal</h4>
+                        <div id="nutrition-alert"></div>
+                        <form id="nutrition-form">
+                            <div class="mb-3">
+                                <label class="form-label">Date</label>
+                                <input type="date" class="form-control" name="date" id="nutrition-date">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Meal Name</label>
+                                <input type="text" class="form-control" name="meal_name" placeholder="e.g. Breakfast, Lunch, Pre-workout" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Calories (kcal)</label>
+                                <input type="number" class="form-control" name="calories" min="0" max="5000" placeholder="e.g. 500" required>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-4">
+                                    <label class="form-label">Protein (g)</label>
+                                    <input type="number" step="0.1" class="form-control" name="protein_g" min="0" placeholder="0">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label">Carbs (g)</label>
+                                    <input type="number" step="0.1" class="form-control" name="carbs_g" min="0" placeholder="0">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label">Fat (g)</label>
+                                    <input type="number" step="0.1" class="form-control" name="fat_g" min="0" placeholder="0">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Notes <span class="text-muted">(optional)</span></label>
+                                <textarea class="form-control" name="notes" rows="2" placeholder="e.g. high protein meal"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-premium w-100">
+                                <i class="bi bi-check2-circle me-2"></i>Log Meal
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="glass-card p-4">
+                        <h4 class="fw-bold text-white mb-4"><i class="bi bi-bar-chart me-2"></i>Nutrition History</h4>
+                        <div id="nutrition-log-list">
+                            <div class="text-center py-4 text-secondary">
+                                <i class="bi bi-hourglass-split fs-2 mb-2 d-block opacity-50"></i>
+                                Loading…
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── MEASUREMENTS TAB ──────────────────────────────────────── -->
+        <div id="tab-measurements" class="tab-panel d-none fade-in-up">
+            <div class="mb-5">
+                <h1 class="fw-bold text-white mb-1">Body Measurements</h1>
+                <p class="text-secondary mb-0">Track your body composition over time</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="glass-card p-4">
+                        <h4 class="fw-bold text-white mb-4"><i class="bi bi-plus-circle me-2"></i>Log Measurements</h4>
+                        <div id="measurement-alert"></div>
+                        <form id="measurement-form">
+                            <div class="mb-3">
+                                <label class="form-label">Date</label>
+                                <input type="date" class="form-control" name="date" id="measurement-date">
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label">Weight (kg)</label>
+                                    <input type="number" step="0.1" class="form-control" name="weight_kg" min="30" max="300" placeholder="e.g. 80">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Body Fat (%)</label>
+                                    <input type="number" step="0.1" class="form-control" name="body_fat_pct" min="3" max="60" placeholder="e.g. 18">
+                                </div>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-4">
+                                    <label class="form-label">Chest (cm)</label>
+                                    <input type="number" step="0.1" class="form-control" name="chest_cm" min="50" max="200" placeholder="0">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label">Waist (cm)</label>
+                                    <input type="number" step="0.1" class="form-control" name="waist_cm" min="40" max="200" placeholder="0">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label">Hips (cm)</label>
+                                    <input type="number" step="0.1" class="form-control" name="hips_cm" min="50" max="200" placeholder="0">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Notes <span class="text-muted">(optional)</span></label>
+                                <textarea class="form-control" name="notes" rows="2" placeholder="Morning measurement, post-workout…"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-premium w-100">
+                                <i class="bi bi-check2-circle me-2"></i>Save Measurement
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="glass-card p-4">
+                        <h4 class="fw-bold text-white mb-4"><i class="bi bi-graph-up-arrow me-2"></i>Measurement History</h4>
+                        <div id="measurement-log-list">
+                            <div class="text-center py-4 text-secondary">
+                                <i class="bi bi-hourglass-split fs-2 mb-2 d-block opacity-50"></i>
+                                Loading…
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── AI COACH TAB ──────────────────────────────────────────── -->
+        <div id="tab-ai-coach" class="tab-panel d-none fade-in-up">
+            <div class="mb-5">
+                <h1 class="fw-bold text-white mb-1">AI Fitness Coach</h1>
+                <p class="text-secondary mb-0">Get personalised fitness and nutrition advice powered by AI</p>
+            </div>
+
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="glass-card p-4 d-flex flex-column" style="min-height:500px">
+                        <div id="chat-messages" class="flex-grow-1 mb-3" style="overflow-y:auto; max-height:380px; padding-right:4px;">
+                            <div class="chat-msg ai-msg mb-3">
+                                <div class="chat-bubble ai-bubble">
+                                    <i class="bi bi-robot me-2 text-gradient-accent"></i>
+                                    <strong>PhysiqueIQ Coach</strong><br>
+                                    <span>Hi <strong>{{ current_user.full_name.split()[0] }}</strong>! 👋 I'm your AI fitness coach. Ask me anything about workouts, nutrition, recovery, or your fitness goals. I'm here to help!</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <input type="text" id="chat-input" class="form-control" placeholder="Ask your coach anything… e.g. 'What should I eat before a workout?'" onkeydown="if(event.key==='Enter') sendChatMessage()">
+                            <button class="btn btn-premium px-4" onclick="sendChatMessage()" id="chat-send-btn">
+                                <i class="bi bi-send-fill"></i>
+                            </button>
+                        </div>
+                        <div class="mt-3 d-flex flex-wrap gap-2">
+                            <span class="text-secondary small me-1">Quick asks:</span>
+                            {% set prompts = ["Best exercises for fat loss?", "How much protein do I need?", "How to improve sleep for recovery?", "Beginner workout plan?"] %}
+                            {% for p in prompts %}
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="quickAsk('{{ p }}')">{{ p }}</button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /dashboard-content -->
+</div><!-- /d-flex -->
+
+<style>
+.avatar-circle {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(99,102,241,0.15);
+    border: 2px solid rgba(99,102,241,0.3);
+    display: flex; align-items: center; justify-content: center;
+}
+.chat-bubble {
+    display: inline-block;
+    padding: 12px 16px;
+    border-radius: 14px;
+    max-width: 85%;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+.ai-bubble {
+    background: rgba(99,102,241,0.12);
+    border: 1px solid rgba(99,102,241,0.25);
+    color: var(--text-primary);
+}
+.user-bubble {
+    background: rgba(6,182,212,0.12);
+    border: 1px solid rgba(6,182,212,0.25);
+    color: var(--text-primary);
+}
+.chat-msg { display: flex; }
+.ai-msg   { justify-content: flex-start; }
+.user-msg { justify-content: flex-end; }
+.log-entry-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+}
+.log-entry-card:hover { border-color: rgba(99,102,241,0.3); }
+.empty-state { text-align: center; padding: 40px 0; color: var(--text-muted); }
+.empty-state i { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: 0.4; }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const API = '/api/v1/members';
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(tabId, el) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('d-none'));
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    const panel = document.getElementById('tab-' + tabId);
+    if (panel) { panel.classList.remove('d-none'); panel.classList.add('fade-in-up'); }
+    if (el) el.classList.add('active');
+    if (tabId === 'workout')      loadWorkouts();
+    if (tabId === 'nutrition')    loadNutrition();
+    if (tabId === 'measurements') loadMeasurements();
+    if (tabId === 'overview')     loadOverviewWorkouts();
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function showAlert(containerId, msg, type='success') {
+    const el = document.getElementById(containerId);
+    el.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show py-2" role="alert">
+        <i class="bi bi-${type==='success'?'check-circle':'exclamation-triangle'} me-2"></i>${msg}
+        <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="alert"></button>
+    </div>`;
+}
+function emptyState(icon, msg) {
+    return `<div class="empty-state"><i class="bi bi-${icon}"></i>${msg}</div>`;
+}
+
+// ── Profile form ──────────────────────────────────────────────────────────────
+document.getElementById('profile-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('save-profile-btn');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving…';
+    const data = Object.fromEntries(new FormData(e.target));
+    // Convert numeric fields
+    ['age','height','weight','target_weight'].forEach(k => { if(data[k]) data[k] = parseFloat(data[k]); else delete data[k]; });
+    try {
+        const res = await fetch(`${API}/me/profile`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+        const json = await res.json();
+        if (res.ok) showAlert('profile-alert', 'Profile updated successfully!');
+        else showAlert('profile-alert', json.detail || 'Update failed', 'danger');
+    } catch { showAlert('profile-alert', 'Network error. Please try again.', 'danger'); }
+    finally { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check2-circle me-2"></i>Save Changes'; }
+});
+
+// ── Workout ───────────────────────────────────────────────────────────────────
+document.getElementById('workout-date').valueAsDate = new Date();
+document.getElementById('workout-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    ['sets','reps'].forEach(k => data[k] = parseInt(data[k]));
+    if(data.weight_kg) data.weight_kg = parseFloat(data.weight_kg); else delete data.weight_kg;
+    if(!data.notes) delete data.notes;
+    const res = await fetch(`${API}/me/workouts`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+    const json = await res.json();
+    if(res.ok) { showAlert('workout-alert', '✅ Workout logged!'); e.target.reset(); document.getElementById('workout-date').valueAsDate = new Date(); loadWorkouts(); loadOverviewWorkouts(); }
+    else showAlert('workout-alert', json.detail || 'Failed', 'danger');
+});
+
+async function loadWorkouts() {
+    const el = document.getElementById('workout-log-list');
+    const res = await fetch(`${API}/me/workouts`);
+    const json = await res.json();
+    const entries = json.workouts || [];
+    if(!entries.length) { el.innerHTML = emptyState('calendar-x', 'No workouts logged yet. Start your first session!'); return; }
+    el.innerHTML = entries.slice().reverse().map(w => `
+        <div class="log-entry-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <strong class="text-white">${w.exercise}</strong>
+                    <span class="badge bg-secondary ms-2">${w.sets}×${w.reps}${w.weight_kg ? ' @ '+w.weight_kg+'kg' : ''}</span>
+                </div>
+                <small class="text-muted">${w.date}</small>
+            </div>
+            ${w.notes ? `<p class="text-secondary small mb-0 mt-1"><i class="bi bi-chat-left-text me-1"></i>${w.notes}</p>` : ''}
+        </div>`).join('');
+}
+
+async function loadOverviewWorkouts() {
+    const el = document.getElementById('overview-workouts');
+    const res = await fetch(`${API}/me/workouts`);
+    const json = await res.json();
+    const entries = (json.workouts || []).slice(-5).reverse();
+    if(!entries.length) { el.innerHTML = emptyState('calendar-x', 'No workouts yet. <br><a href="#" class="text-gradient-primary" onclick="switchTab(\'workout\',document.querySelector(\'[data-tab=workout]\'))">Log your first workout →</a>'); return; }
+    el.innerHTML = entries.map(w => `
+        <div class="log-entry-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <span><strong class="text-white">${w.exercise}</strong>
+                    <span class="badge bg-secondary ms-2">${w.sets}×${w.reps}${w.weight_kg?' @ '+w.weight_kg+'kg':''}</span>
+                </span>
+                <small class="text-muted">${w.date}</small>
+            </div>
+        </div>`).join('');
+}
+
+// ── Nutrition ─────────────────────────────────────────────────────────────────
+document.getElementById('nutrition-date').valueAsDate = new Date();
+document.getElementById('nutrition-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    data.calories = parseInt(data.calories);
+    ['protein_g','carbs_g','fat_g'].forEach(k => { if(data[k]) data[k]=parseFloat(data[k]); else delete data[k]; });
+    if(!data.notes) delete data.notes;
+    const res = await fetch(`${API}/me/nutrition`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+    const json = await res.json();
+    if(res.ok) { showAlert('nutrition-alert','✅ Meal logged!'); e.target.reset(); document.getElementById('nutrition-date').valueAsDate = new Date(); loadNutrition(); }
+    else showAlert('nutrition-alert', json.detail || 'Failed', 'danger');
+});
+
+async function loadNutrition() {
+    const el = document.getElementById('nutrition-log-list');
+    const res = await fetch(`${API}/me/nutrition`);
+    const json = await res.json();
+    const entries = json.nutrition || [];
+    if(!entries.length) { el.innerHTML = emptyState('egg-fried', 'No meals logged yet. Start tracking your nutrition!'); return; }
+    el.innerHTML = entries.slice().reverse().map(n => `
+        <div class="log-entry-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <strong class="text-white">${n.meal_name}</strong>
+                    <span class="badge bg-warning bg-opacity-25 text-warning ms-2">${n.calories} kcal</span>
+                </div>
+                <small class="text-muted">${n.date}</small>
+            </div>
+            <div class="mt-1 d-flex gap-3">
+                ${n.protein_g !== undefined && n.protein_g !== null ? `<small class="text-secondary"><i class="bi bi-circle-fill me-1" style="color:#6366f1;font-size:0.4rem"></i>P: ${n.protein_g}g</small>` : ''}
+                ${n.carbs_g !== undefined && n.carbs_g !== null ? `<small class="text-secondary"><i class="bi bi-circle-fill me-1" style="color:#10b981;font-size:0.4rem"></i>C: ${n.carbs_g}g</small>` : ''}
+                ${n.fat_g !== undefined && n.fat_g !== null ? `<small class="text-secondary"><i class="bi bi-circle-fill me-1" style="color:#f59e0b;font-size:0.4rem"></i>F: ${n.fat_g}g</small>` : ''}
+            </div>
+        </div>`).join('');
+}
+
+// ── Measurements ──────────────────────────────────────────────────────────────
+document.getElementById('measurement-date').valueAsDate = new Date();
+document.getElementById('measurement-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    ['weight_kg','body_fat_pct','chest_cm','waist_cm','hips_cm'].forEach(k => { if(data[k]) data[k]=parseFloat(data[k]); else delete data[k]; });
+    if(!data.notes) delete data.notes;
+    const res = await fetch(`${API}/me/measurements`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+    const json = await res.json();
+    if(res.ok) { showAlert('measurement-alert','✅ Measurement saved!'); e.target.reset(); document.getElementById('measurement-date').valueAsDate = new Date(); loadMeasurements(); }
+    else showAlert('measurement-alert', json.detail || 'Failed', 'danger');
+});
+
+async function loadMeasurements() {
+    const el = document.getElementById('measurement-log-list');
+    const res = await fetch(`${API}/me/measurements`);
+    const json = await res.json();
+    const entries = json.measurements || [];
+    if(!entries.length) { el.innerHTML = emptyState('rulers', 'No measurements yet. Track your progress over time!'); return; }
+    el.innerHTML = entries.slice().reverse().map(m => `
+        <div class="log-entry-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <strong class="text-white">${m.date}</strong>
+                ${m.weight_kg ? `<span class="badge bg-primary bg-opacity-25 text-primary">${m.weight_kg} kg</span>` : ''}
+            </div>
+            <div class="mt-1 d-flex flex-wrap gap-3">
+                ${m.body_fat_pct !== undefined && m.body_fat_pct !== null ? `<small class="text-secondary">Body Fat: ${m.body_fat_pct}%</small>` : ''}
+                ${m.chest_cm !== undefined && m.chest_cm !== null ? `<small class="text-secondary">Chest: ${m.chest_cm}cm</small>` : ''}
+                ${m.waist_cm !== undefined && m.waist_cm !== null ? `<small class="text-secondary">Waist: ${m.waist_cm}cm</small>` : ''}
+                ${m.hips_cm !== undefined && m.hips_cm !== null ? `<small class="text-secondary">Hips: ${m.hips_cm}cm</small>` : ''}
+            </div>
+            ${m.notes ? `<p class="text-secondary small mb-0 mt-1">${m.notes}</p>` : ''}
+        </div>`).join('');
+}
+
+// ── AI Coach ──────────────────────────────────────────────────────────────────
+const AI_RESPONSES = {
+    "fat loss": "For fat loss, aim for a 300–500 kcal deficit per day. Prioritise high-protein foods (chicken, eggs, legumes) to preserve muscle. Add 3–4 sessions of resistance training per week alongside 2 cardio sessions.",
+    "protein": "A general guideline is 1.6–2.2g of protein per kg of bodyweight for active individuals. For a balanced meal, combine a lean protein source (eggs, chicken, fish, tofu) with complex carbs and healthy fats.",
+    "muscle": "For muscle gain, maintain a slight caloric surplus (~200–400 kcal/day) and follow progressive overload — gradually increasing weights or reps each session. Sleep 7–9 hours for optimal recovery.",
+    "workout": "A solid beginner plan: 3 days/week full-body workout. Include compound lifts like squats, deadlifts, bench press, and rows. Warm up 5–10 mins and cool down with stretching.",
+    "sleep": "Sleep is critical for recovery and hormone regulation. Aim for 7–9 hours. Avoid screens 1 hour before bed, keep your room cool (18–20°C), and maintain a consistent sleep schedule.",
+    "recovery": "Active recovery includes light walking, stretching, or yoga on rest days. Stay hydrated (2–3L water/day), eat enough protein, and avoid training the same muscle group 2 days in a row.",
+    "cardio": "Cardio improves cardiovascular health and burns calories. For fat loss, combine HIIT (2×/week) with steady-state cardio (2–3×/week). Don't overdo it — it can hamper muscle recovery.",
+    "beginner": "Start with 3 full-body sessions per week. Focus on form over weight. Key exercises: squats, push-ups, rows, lunges, and planks. Add 5–10% more load every 2 weeks.",
+    "default": "Great question! For personalised advice, ensure your profile is updated with your goals, weight, and experience level. Generally: train consistently, eat whole foods, prioritise sleep, and track your progress."
+};
+
+function getAIResponse(msg) {
+    const lower = msg.toLowerCase();
+    for (const [key, reply] of Object.entries(AI_RESPONSES)) {
+        if (lower.includes(key)) return reply;
+    }
+    return AI_RESPONSES["default"];
+}
+
+function appendChatMsg(text, isUser) {
+    const box = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = `chat-msg ${isUser?'user-msg':'ai-msg'} mb-3`;
+    div.innerHTML = `<div class="chat-bubble ${isUser?'user-bubble':'ai-bubble'}">
+        ${!isUser ? '<i class="bi bi-robot me-2 text-gradient-accent"></i>' : ''}
+        ${text}
+    </div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+    appendChatMsg(msg, true);
+    input.value = '';
+    const btn = document.getElementById('chat-send-btn');
+    const original = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    try {
+        const res = await fetch(`${API}/me/coach`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: msg }) });
+        const json = await res.json();
+        appendChatMsg(json.message || getAIResponse(msg), false);
+    } catch {
+        appendChatMsg(getAIResponse(msg), false);
+    } finally {
+        btn.disabled = false; btn.innerHTML = original;
+    }
+}
+
+function quickAsk(q) {
+    document.getElementById('chat-input').value = q;
+    sendChatMessage();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadOverviewWorkouts();
+</script>
+{% endblock %}

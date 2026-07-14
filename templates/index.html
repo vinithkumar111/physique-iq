@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}PhysiqueIQ | AI-Powered Personal Coach & Gym Analytics{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="row align-items-center py-5 mb-5 fade-in-up" style="min-height: 70vh;">
+    <div class="col-lg-6 mb-5 mb-lg-0">
+        <span class="badge badge-custom badge-member mb-3"><i class="bi bi-stars me-1 text-gradient-primary"></i>Next Gen Fitness Platform</span>
+        <h1 class="display-3 fw-bold lh-sm text-white mb-3">
+            Build Your Perfect <br>
+            <span class="text-gradient-primary">Physique</span> with <span class="text-gradient-accent">AI</span>
+        </h1>
+        <p class="lead text-secondary mb-4">
+            PhysiqueIQ integrates Artificial Intelligence, Machine Learning predictions, and Computer Vision technique analysis to elevate your training, nutrition, and gym progression to elite status.
+        </p>
+        <div class="d-flex flex-wrap gap-3">
+            <a href="/register" class="btn btn-premium btn-lg px-5 py-3">
+                <i class="bi bi-rocket-takeoff-fill me-2"></i>Get Started Free
+            </a>
+            <a href="/login" class="btn btn-premium-outline btn-lg px-5 py-3">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+            </a>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 text-center">
+        <!-- Visual Accent Container representing AI analysis -->
+        <div class="p-5 glass-card position-relative overflow-hidden mx-auto" style="max-width: 500px;">
+            <div class="position-absolute top-0 start-0 w-100 h-100 bg-primary opacity-5" style="filter: blur(100px);"></div>
+            <i class="bi bi-cpu-fill text-gradient-primary" style="font-size: 6rem;"></i>
+            <h3 class="fw-bold mt-4 text-white">PhysiqueIQ AI</h3>
+            <div class="d-flex justify-content-center gap-2 my-3">
+                <span class="badge bg-secondary bg-opacity-20 text-info">Computer Vision</span>
+                <span class="badge bg-secondary bg-opacity-20 text-warning">Diet Planner</span>
+                <span class="badge bg-secondary bg-opacity-20 text-success">Predictive ML</span>
+            </div>
+            <p class="text-secondary small">
+                Upload your training videos for posture correction, predict your strength improvements, and get custom recipes instantly.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="row g-4 py-5 border-top border-secondary border-opacity-25">
+    <h2 class="text-center fw-bold text-white mb-5">Features Engineered For Elite Progression</h2>
+    
+    <div class="col-md-4">
+        <div class="glass-card p-4 h-100 stat-card">
+            <i class="bi bi-chat-square-dots text-gradient-primary fs-1 mb-3"></i>
+            <h4 class="fw-bold text-white">AI Coach Chatbot</h4>
+            <p class="text-secondary mb-0">Ask questions about bodybuilding, recovery, supplements, and techniques. Personalized using your logs.</p>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="glass-card p-4 h-100 stat-card">
+            <i class="bi bi-calendar2-check text-gradient-accent fs-1 mb-3"></i>
+            <h4 class="fw-bold text-white">Smart Gym Scheduler</h4>
+            <p class="text-secondary mb-0">Log workouts, track 1RMs, check-in using QR codes, and monitor consistency streaks dynamically.</p>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="glass-card p-4 h-100 stat-card">
+            <i class="bi bi-graph-up-arrow text-success fs-1 mb-3"></i>
+            <h4 class="fw-bold text-white">Predictive Analytics</h4>
+            <p class="text-secondary mb-0">Scikit-learn powered projections predict expected weight gain, body fat reduction, and future lifts.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

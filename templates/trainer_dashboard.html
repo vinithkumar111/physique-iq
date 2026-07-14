@@ -1,0 +1,509 @@
+{% extends "base.html" %}
+
+{% block title %}Trainer Dashboard | PhysiqueIQ{% endblock %}
+
+{% block layout %}
+<div class="d-flex">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="px-4 py-2 mb-3">
+            <span class="text-muted text-uppercase small font-monospace">Athletes</span>
+        </div>
+        <a href="#" class="sidebar-link active" data-tab="roster" onclick="switchTab('roster',this)">
+            <i class="bi bi-person-workspace"></i>My Roster
+        </a>
+        <a href="#" class="sidebar-link" data-tab="workout-builder" onclick="switchTab('workout-builder',this)">
+            <i class="bi bi-calendar4-week"></i>Workout Builder
+        </a>
+        <a href="#" class="sidebar-link" data-tab="diet-designer" onclick="switchTab('diet-designer',this)">
+            <i class="bi bi-egg-fried"></i>Diet Designer
+        </a>
+        <a href="#" class="sidebar-link" data-tab="messages" onclick="switchTab('messages',this)">
+            <i class="bi bi-chat-dots"></i>Messages
+        </a>
+        <hr class="mx-3 my-4 border-secondary opacity-25">
+        <div class="px-4 py-2">
+            <span class="text-muted text-uppercase small font-monospace">Reports</span>
+        </div>
+        <a href="#" class="sidebar-link" data-tab="reports" onclick="switchTab('reports',this)">
+            <i class="bi bi-file-earmark-pdf"></i>Generate PDF
+        </a>
+    </div>
+
+    <!-- Dashboard Main Content -->
+    <div class="dashboard-content w-100">
+
+        <!-- ── ROSTER TAB ─────────────────────────────────────────────── -->
+        <div id="tab-roster" class="tab-panel fade-in-up">
+            <div class="d-flex justify-content-between align-items-center mb-5">
+                <div>
+                    <h1 class="fw-bold text-white mb-1">Trainer Dashboard</h1>
+                    <p class="text-secondary mb-0">Manage workouts, assign diets, and monitor your athlete roster</p>
+                </div>
+                <span class="badge bg-secondary bg-opacity-25 text-gradient-primary p-2 px-3 border border-primary border-opacity-25">
+                    <i class="bi bi-person-badge-fill me-1"></i>Coach Account
+                </span>
+            </div>
+
+            <!-- Metric Cards -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-4">
+                    <div class="glass-card p-4 stat-card">
+                        <span class="text-secondary small font-monospace text-uppercase">Assigned Members</span>
+                        <h2 class="fw-bold text-white mt-2 mb-0">{{ members | length }}</h2>
+                        <span class="text-success small">
+                            {% if members | length > 0 %}All active this week{% else %}No members yet{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="glass-card p-4 stat-card" style="--primary-grad: var(--accent-grad)">
+                        <span class="text-secondary small font-monospace text-uppercase">Your Name</span>
+                        <h2 class="fw-bold text-white mt-2 mb-0 fs-4">{{ current_user.full_name.split()[0] }}</h2>
+                        <span class="text-secondary small">{{ current_user.email }}</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="glass-card p-4 stat-card" style="--primary-grad: linear-gradient(135deg, #10b981 0%, #059669 100%)">
+                        <span class="text-secondary small font-monospace text-uppercase">Workout Plans</span>
+                        <h2 class="fw-bold text-white mt-2 mb-0" id="plan-count">0</h2>
+                        <span class="text-success small">Templates created</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Member Roster Table -->
+            <div class="glass-card p-4">
+                <h4 class="fw-bold text-white mb-4"><i class="bi bi-person-lines-fill me-2"></i>Member Roster</h4>
+                {% if members %}
+                <table class="user-table">
+                    <thead><tr>
+                        <th>#</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr></thead>
+                    <tbody>
+                    {% for m in members %}
+                    <tr>
+                        <td><span class="text-muted">{{ loop.index }}</span></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="mini-avatar">{{ m.full_name[0] }}</div>
+                                <strong>{{ m.full_name }}</strong>
+                            </div>
+                        </td>
+                        <td><span class="text-secondary">{{ m.email }}</span></td>
+                        <td>
+                            <span class="status-dot" style="background:#10b981"></span>
+                            <span class="text-success">Active</span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-secondary me-1" title="View profile" onclick="viewMemberProfile('{{ m.full_name }}', '{{ m.email }}', '{{ m.created_at.strftime('%Y-%m-%d') }}')">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-premium btn-sm" title="Build workout plan" onclick="switchTab('workout-builder', document.querySelector('[data-tab=workout-builder]')); document.getElementById('plan-member').value='{{ m.full_name }}'">
+                                <i class="bi bi-calendar-plus"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center py-5 text-secondary">
+                    <i class="bi bi-people fs-2 d-block mb-2 opacity-40"></i>
+                    <p>No members assigned yet. Members are added by the admin.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ── WORKOUT BUILDER TAB ───────────────────────────────────── -->
+        <div id="tab-workout-builder" class="tab-panel d-none fade-in-up">
+            <div class="mb-5">
+                <h1 class="fw-bold text-white mb-1">Workout Builder</h1>
+                <p class="text-secondary mb-0">Design and save workout templates for your athletes</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="glass-card p-4">
+                        <h4 class="fw-bold text-white mb-4"><i class="bi bi-plus-circle me-2"></i>Create Template</h4>
+                        <div id="workout-plan-alert"></div>
+                        <form id="workout-plan-form">
+                            <div class="mb-3">
+                                <label class="form-label">Plan Name</label>
+                                <input type="text" class="form-control" name="plan_name" placeholder="e.g. Push Day A, Leg Day, Full Body" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Assign To Member</label>
+                                <input type="text" class="form-control" name="member" id="plan-member" placeholder="Member name (optional)">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Difficulty</label>
+                                <select class="form-select" name="difficulty">
+                                    <option value="beginner">Beginner</option>
+                                    <option value="intermediate" selected>Intermediate</option>
+                                    <option value="advanced">Advanced</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Duration (minutes)</label>
+                                <input type="number" class="form-control" name="duration_min" value="60" min="10" max="180">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Exercises</label>
+                                <textarea class="form-control" name="exercises" rows="6" required
+                                    placeholder="List each exercise on a new line. e.g.:&#10;Bench Press — 4×8 @ 80kg&#10;Incline Dumbbell Press — 3×10&#10;Cable Flyes — 3×15&#10;Tricep Pushdown — 3×12"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Notes / Coaching Cues</label>
+                                <textarea class="form-control" name="notes" rows="2" placeholder="Rest 60–90s between sets. Focus on mind-muscle connection…"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-premium w-100">
+                                <i class="bi bi-save me-2"></i>Save Template
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="glass-card p-4">
+                        <h4 class="fw-bold text-white mb-4"><i class="bi bi-list-ul me-2"></i>Saved Templates</h4>
+                        <div id="workout-plans-list">
+                            <div class="empty-state"><i class="bi bi-calendar4-week"></i>No templates yet. Create your first workout plan!</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── DIET DESIGNER TAB ─────────────────────────────────────── -->
+        <div id="tab-diet-designer" class="tab-panel d-none fade-in-up">
+            <div class="mb-5">
+                <h1 class="fw-bold text-white mb-1">Diet Designer</h1>
+                <p class="text-secondary mb-0">Build personalised nutrition plans for your athletes</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="glass-card p-4">
+                        <h4 class="fw-bold text-white mb-4"><i class="bi bi-plus-circle me-2"></i>Create Diet Plan</h4>
+                        <div id="diet-plan-alert"></div>
+                        <form id="diet-plan-form">
+                            <div class="mb-3">
+                                <label class="form-label">Plan Name</label>
+                                <input type="text" class="form-control" name="plan_name" placeholder="e.g. Fat Loss Phase 1, Bulk Diet" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Assign To Member</label>
+                                <input type="text" class="form-control" name="member" placeholder="Member name (optional)">
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label">Daily Calories</label>
+                                    <input type="number" class="form-control" name="calories" value="2200" min="500" max="6000" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Protein (g)</label>
+                                    <input type="number" class="form-control" name="protein_g" value="160" min="0" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Carbs (g)</label>
+                                    <input type="number" class="form-control" name="carbs_g" value="220" min="0">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Fat (g)</label>
+                                    <input type="number" class="form-control" name="fat_g" value="70" min="0">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Meal Plan Details</label>
+                                <textarea class="form-control" name="meals" rows="6" required
+                                    placeholder="Describe each meal. e.g.:&#10;Breakfast: Oats + eggs + banana&#10;Lunch: Chicken breast + rice + veggies&#10;Pre-workout: Protein shake + fruit&#10;Dinner: Salmon + sweet potato&#10;Snack: Nuts + Greek yoghurt"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Dietary Restrictions</label>
+                                <input type="text" class="form-control" name="restrictions" placeholder="e.g. No dairy, gluten-free…">
+                            </div>
+                            <button type="submit" class="btn btn-premium w-100">
+                                <i class="bi bi-save me-2"></i>Save Diet Plan
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="glass-card p-4">
+                        <h4 class="fw-bold text-white mb-4"><i class="bi bi-list-ul me-2"></i>Saved Diet Plans</h4>
+                        <div id="diet-plans-list">
+                            <div class="empty-state"><i class="bi bi-egg-fried"></i>No diet plans yet. Create your first nutrition plan!</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── MESSAGES TAB ──────────────────────────────────────────── -->
+        <div id="tab-messages" class="tab-panel d-none fade-in-up">
+            <div class="mb-5">
+                <h1 class="fw-bold text-white mb-1">Messages</h1>
+                <p class="text-secondary mb-0">Communicate with your athletes</p>
+            </div>
+            <div class="glass-card p-5 text-center">
+                <i class="bi bi-chat-dots fs-1 text-gradient-primary d-block mb-4"></i>
+                <h4 class="text-white fw-bold mb-3">Messaging — Coming Soon</h4>
+                <p class="text-secondary mb-4 mx-auto" style="max-width:420px">Real-time messaging between trainers and their athletes will be available in Phase 2, including push notifications and message history.</p>
+                <span class="badge bg-warning bg-opacity-15 text-warning px-3 py-2 border border-warning border-opacity-25">
+                    <i class="bi bi-clock-history me-2"></i>Phase 2 Feature
+                </span>
+            </div>
+        </div>
+
+        <!-- ── REPORTS TAB ───────────────────────────────────────────── -->
+        <div id="tab-reports" class="tab-panel d-none fade-in-up">
+            <div class="mb-5">
+                <h1 class="fw-bold text-white mb-1">Generate Reports</h1>
+                <p class="text-secondary mb-0">Export athlete progress and training summaries</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="glass-card p-4 text-center">
+                        <i class="bi bi-file-earmark-pdf fs-1 text-gradient-primary d-block mb-3"></i>
+                        <h5 class="text-white fw-bold mb-2">Progress Report PDF</h5>
+                        <p class="text-secondary small mb-4">Generate a full progress report for any member including workout history, body measurements, and goal tracking.</p>
+                        <button class="btn btn-premium w-100" onclick="showComingSoon(this)">
+                            <i class="bi bi-download me-2"></i>Export PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="glass-card p-4 text-center">
+                        <i class="bi bi-file-earmark-spreadsheet fs-1 text-gradient-accent d-block mb-3"></i>
+                        <h5 class="text-white fw-bold mb-2">Roster Summary CSV</h5>
+                        <p class="text-secondary small mb-4">Export your full athlete roster with attendance, progress metrics, and assigned plans in CSV format.</p>
+                        <button class="btn btn-premium-accent w-100" onclick="showComingSoon(this)">
+                            <i class="bi bi-download me-2"></i>Export CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="glass-card p-4 text-center" style="border-style: dashed;">
+                        <p class="text-secondary mb-0"><i class="bi bi-info-circle me-2"></i>Full reporting with athlete-specific PDFs, trend charts, and coach summaries will be available in Phase 2.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /dashboard-content -->
+</div><!-- /d-flex -->
+
+<!-- Member profile viewer modal -->
+<div class="modal fade" id="memberModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background:#111827; border:1px solid var(--border-color)">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-white" id="member-modal-title">Member Profile</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="member-modal-body"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+.user-table { width:100%; }
+.user-table th { color: var(--text-muted); font-size:0.75rem; text-transform:uppercase; font-weight:600; padding:8px 12px; border-bottom:1px solid var(--border-color); }
+.user-table td { padding:12px; border-bottom:1px solid rgba(255,255,255,0.04); color: var(--text-primary); vertical-align:middle; }
+.user-table tr:last-child td { border-bottom:none; }
+.user-table tr:hover td { background:rgba(255,255,255,0.02); }
+.status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px; }
+.mini-avatar {
+    width:34px; height:34px; border-radius:50%;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:0.85rem; color:white; flex-shrink:0;
+}
+.empty-state { text-align: center; padding: 40px 0; color: var(--text-muted); }
+.empty-state i { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: 0.4; }
+.plan-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+}
+.plan-card:hover { border-color: rgba(99,102,241,0.3); }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const TRAINER_API = '/api/v1/admin';
+let workoutPlans = [];
+let dietPlans = [];
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(tabId, el) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('d-none'));
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    const panel = document.getElementById('tab-' + tabId);
+    if (panel) panel.classList.remove('d-none');
+    if (el) el.classList.add('active');
+    if (tabId === 'workout-builder') renderWorkoutPlans();
+    if (tabId === 'diet-designer')   renderDietPlans();
+}
+
+function showAlert(id, msg, type='success') {
+    document.getElementById(id).innerHTML = `<div class="alert alert-${type} py-2 small alert-dismissible fade show">
+        <i class="bi bi-${type==='success'?'check-circle':'exclamation-triangle'} me-2"></i>${msg}
+        <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="alert"></button>
+    </div>`;
+}
+
+function showComingSoon(btn) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-clock-history me-2"></i>Coming in Phase 2…';
+    btn.disabled = true;
+    setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 2500);
+}
+
+// ── Workout Plans ─────────────────────────────────────────────────────────────
+document.getElementById('workout-plan-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    data.duration_min = parseInt(data.duration_min || '60');
+    try {
+        const res = await fetch(`${TRAINER_API}/trainer-plans/workouts`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+        const json = await res.json();
+        if (res.ok) {
+            workoutPlans.unshift(json.template);
+            document.getElementById('plan-count').textContent = workoutPlans.length;
+            renderWorkoutPlans();
+            showAlert('workout-plan-alert', `✅ Template "${json.template.plan_name}" saved!`);
+            e.target.reset();
+        } else {
+            showAlert('workout-plan-alert', json.detail || 'Could not save template', 'danger');
+        }
+    } catch {
+        showAlert('workout-plan-alert', 'Network error. Please try again.', 'danger');
+    }
+});
+
+async function loadTrainerPlans() {
+    try {
+        const res = await fetch(`${TRAINER_API}/trainer-plans`);
+        const json = await res.json();
+        workoutPlans = json.workout_templates || [];
+        dietPlans = json.diet_templates || [];
+        renderWorkoutPlans();
+        renderDietPlans();
+        document.getElementById('plan-count').textContent = workoutPlans.length;
+    } catch {
+        workoutPlans = [];
+        dietPlans = [];
+        renderWorkoutPlans();
+        renderDietPlans();
+    }
+}
+
+function renderWorkoutPlans() {
+    const el = document.getElementById('workout-plans-list');
+    if (!workoutPlans.length) { el.innerHTML = '<div class="empty-state"><i class="bi bi-calendar4-week"></i>No templates yet.</div>'; return; }
+    el.innerHTML = workoutPlans.map(p => `
+        <div class="plan-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <strong class="text-white">${p.plan_name}</strong>
+                    <span class="badge bg-primary bg-opacity-25 text-primary ms-2">${p.difficulty}</span>
+                    ${p.member ? `<span class="badge bg-secondary ms-1">${p.member}</span>` : ''}
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <small class="text-muted">${p.created_at}</small>
+                </div>
+            </div>
+            <div class="mt-2">
+                <small class="text-secondary"><i class="bi bi-clock me-1"></i>${p.duration_min || 60} min</small>
+            </div>
+            <pre class="text-secondary small mt-2 mb-0" style="white-space:pre-wrap; font-family:inherit">${p.exercises || ''}</pre>
+            ${p.notes ? `<p class="text-muted small mb-0 mt-1"><i class="bi bi-chat-left-dots me-1"></i>${p.notes}</p>` : ''}
+        </div>`).join('');
+}
+
+// ── Diet Plans ────────────────────────────────────────────────────────────────
+document.getElementById('diet-plan-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    data.calories = parseInt(data.calories || '0');
+    data.protein_g = parseInt(data.protein_g || '0');
+    data.carbs_g = parseInt(data.carbs_g || '0');
+    data.fat_g = parseInt(data.fat_g || '0');
+    try {
+        const res = await fetch(`${TRAINER_API}/trainer-plans/diets`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+        const json = await res.json();
+        if (res.ok) {
+            dietPlans.unshift(json.template);
+            renderDietPlans();
+            showAlert('diet-plan-alert', `✅ Diet plan "${json.template.plan_name}" saved!`);
+            e.target.reset();
+        } else {
+            showAlert('diet-plan-alert', json.detail || 'Could not save diet plan', 'danger');
+        }
+    } catch {
+        showAlert('diet-plan-alert', 'Network error. Please try again.', 'danger');
+    }
+});
+
+function renderDietPlans() {
+    const el = document.getElementById('diet-plans-list');
+    if (!dietPlans.length) { el.innerHTML = '<div class="empty-state"><i class="bi bi-egg-fried"></i>No diet plans yet.</div>'; return; }
+    el.innerHTML = dietPlans.map(p => `
+        <div class="plan-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <strong class="text-white">${p.plan_name}</strong>
+                    <span class="badge bg-warning bg-opacity-25 text-warning ms-2">${p.calories} kcal</span>
+                    ${p.member ? `<span class="badge bg-secondary ms-1">${p.member}</span>` : ''}
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <small class="text-muted">${p.created_at}</small>
+                </div>
+            </div>
+            <div class="mt-2 d-flex gap-3">
+                <small class="text-secondary"><span style="color:#6366f1">●</span> P: ${p.protein_g}g</small>
+                <small class="text-secondary"><span style="color:#10b981">●</span> C: ${p.carbs_g}g</small>
+                <small class="text-secondary"><span style="color:#f59e0b">●</span> F: ${p.fat_g}g</small>
+                ${p.restrictions ? `<small class="text-muted">⚠ ${p.restrictions}</small>` : ''}
+            </div>
+            <pre class="text-secondary small mt-2 mb-0" style="white-space:pre-wrap; font-family:inherit">${p.meals || ''}</pre>
+        </div>`).join('');
+}
+
+// ── Member profile viewer ─────────────────────────────────────────────────────
+function viewMemberProfile(name, email, joined) {
+    document.getElementById('member-modal-title').textContent = name;
+    document.getElementById('member-modal-body').innerHTML = `
+        <div class="text-center mb-4">
+            <div class="mini-avatar mx-auto mb-3" style="width:60px;height:60px;font-size:1.5rem">${name[0]}</div>
+            <h5 class="text-white mb-1">${name}</h5>
+            <p class="text-secondary small">${email}</p>
+        </div>
+        <table class="table table-dark table-borderless mb-0">
+            <tr><td class="text-secondary">Member since</td><td class="text-white">${joined}</td></tr>
+            <tr><td class="text-secondary">Status</td><td class="text-success">Active</td></tr>
+        </table>
+        <div class="mt-3 d-grid gap-2">
+            <button class="btn btn-premium btn-sm" onclick="switchTab('workout-builder', document.querySelector('[data-tab=workout-builder]')); document.getElementById('plan-member').value='${name}'; bootstrap.Modal.getInstance(document.getElementById('memberModal')).hide()">
+                <i class="bi bi-calendar-plus me-2"></i>Create Workout Plan
+            </button>
+        </div>`;
+    new bootstrap.Modal(document.getElementById('memberModal')).show();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadTrainerPlans();
+document.getElementById('plan-count').textContent = workoutPlans.length;
+</script>
+{% endblock %}
